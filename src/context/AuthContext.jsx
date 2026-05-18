@@ -1,39 +1,57 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from '../services/firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
 import { authAPI } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('snapclone_user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.token) {
-      connectSocket(user.token);
-    }
-    setLoading(false);
-  }, [user?.token]);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await authAPI.getMe();
+          setUser({ ...res.data, token });
+          await connectSocket();
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
-  const login = async (data) => {
-    const res = await authAPI.login(data);
-    localStorage.setItem('snapclone_user', JSON.stringify(res.data));
-    setUser(res.data);
-    connectSocket(res.data.token);
+  const login = async (email, password) => {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const idToken = await cred.user.getIdToken();
+    const res = await authAPI.login({ idToken });
+    setUser({ ...res.data, token: idToken });
+    await connectSocket();
   };
 
-  const register = async (data) => {
-    const res = await authAPI.register(data);
-    localStorage.setItem('snapclone_user', JSON.stringify(res.data));
-    setUser(res.data);
-    connectSocket(res.data.token);
+  const register = async (email, password, username) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const idToken = await cred.user.getIdToken();
+    const res = await authAPI.register({ idToken, username });
+    setUser({ ...res.data, token: idToken });
+    await connectSocket();
   };
 
-  const logout = () => {
-    localStorage.removeItem('snapclone_user');
+  const logout = async () => {
+    await signOut(auth);
     disconnectSocket();
     setUser(null);
   };

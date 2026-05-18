@@ -15,7 +15,7 @@ const Register = () => {
     e.preventDefault()
     setError('')
     try {
-      await auth.register({ username, email, password })
+      await auth.register(email, password, username)
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed')

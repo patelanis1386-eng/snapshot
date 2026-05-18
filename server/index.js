@@ -5,8 +5,11 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const dotenv = require('dotenv');
-const jwt = require('jsonwebtoken');
+const admin = require('firebase-admin');
 const User = require('./models/User');
+
+const serviceAccount = require('./firebase-service-account.json');
+admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const storyRoutes = require('./routes/storyRoutes');
@@ -42,14 +45,12 @@ app.get('/', (req, res) => {
 
 const activeUsers = new Map();
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error'));
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.userId = decoded.id;
+    if (!token) return next(new Error('Authentication error'));
+    const decoded = await admin.auth().verifyIdToken(token);
+    socket.userId = decoded.uid;
     next();
   } catch (err) {
     next(new Error('Authentication error'));

@@ -1,17 +1,15 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    required: true,
+  },
   email: {
     type: String,
     required: true,
-    unique: true,
     lowercase: true,
     trim: true,
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6,
   },
   username: {
     type: String,
@@ -29,11 +27,11 @@ const userSchema = new mongoose.Schema({
     maxlength: 150,
   },
   followers: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
   }],
   following: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
   }],
   isOnline: {
@@ -44,6 +42,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-}, { timestamps: true });
+}, { timestamps: true, _id: false });
 
 module.exports = mongoose.model('User', userSchema);

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const postSchema = new mongoose.Schema({
   user: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
     required: true,
   },
@@ -21,12 +21,12 @@ const postSchema = new mongoose.Schema({
     maxlength: 200,
   },
   likes: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
   }],
   comments: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
     },
     text: {

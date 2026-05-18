@@ -14,7 +14,7 @@ const Login = () => {
     e.preventDefault()
     setError('')
     try {
-      await auth.login({ email, password })
+      await auth.login(email, password)
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed')

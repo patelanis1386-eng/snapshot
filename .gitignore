@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+server/firebase-service-account.json
 server/uploads/*
 !server/uploads/.gitkeep
 *.log

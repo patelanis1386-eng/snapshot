@@ -1,32 +1,33 @@
-const bcrypt = require('bcryptjs');
+const admin = require('firebase-admin');
 const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
 
 const register = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
-    if (!email || !password || !username) {
-      return res.status(400).json({ message: 'All fields are required' });
+    const { idToken, username } = req.body;
+    if (!idToken || !username) {
+      return res.status(400).json({ message: 'Token and username are required' });
     }
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { uid, email } = decoded;
+    const existingUser = await User.findById(uid);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
     const user = await User.create({
+      _id: uid,
       email,
-      password: hashedPassword,
       username,
     });
-    const token = generateToken(user._id);
     res.status(201).json({
       _id: user._id,
       username: user.username,
       email: user.email,
       profilePicture: user.profilePicture,
       bio: user.bio,
-      token,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -35,26 +36,22 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: 'Token is required' });
     }
-    const user = await User.findOne({ email });
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { uid, email } = decoded;
+    const user = await User.findById(uid);
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(404).json({ message: 'User not found. Please register.' });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    const token = generateToken(user._id);
     res.json({
       _id: user._id,
       username: user.username,
       email: user.email,
       profilePicture: user.profilePicture,
       bio: user.bio,
-      token,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

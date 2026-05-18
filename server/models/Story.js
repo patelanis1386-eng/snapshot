@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const storySchema = new mongoose.Schema({
   user: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
     required: true,
   },
@@ -21,13 +21,12 @@ const storySchema = new mongoose.Schema({
     maxlength: 100,
   },
   viewedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
   }],
   expiresAt: {
     type: Date,
     default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
-    index: { expires: 0 },
   },
 }, { timestamps: true });
 

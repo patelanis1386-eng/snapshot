@@ -1,11 +1,13 @@
 import axios from 'axios';
+import { auth } from './firebase';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
-API.interceptors.request.use((req) => {
-  const user = JSON.parse(localStorage.getItem('snapclone_user'));
-  if (user?.token) {
-    req.headers.Authorization = `Bearer ${user.token}`;
+API.interceptors.request.use(async (req) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    req.headers.Authorization = `Bearer ${token}`;
   }
   return req;
 });
